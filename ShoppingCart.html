@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="theStyle.css">
@@ -135,8 +137,10 @@
 
                         <br><br>
 
+                  
+
                         <button type="button" onclick="clearCart()">Clear Cart</button>
-                        <button type="submit">Submit Order</button>
+                        <button type="submit" id="submitBtn">Submit Order</button>
                     </form>
                 </center>
             </div>
@@ -148,36 +152,38 @@
         </div>
       
     </div>
+    
+
 
     <script>
         // Display items in the cart
         function displayOrder() {
-            const cart = JSON.parse(localStorage.getItem('shoppingCart')) || [];
-            const itemsContainer = document.getElementById('items');
+    const cart = JSON.parse(localStorage.getItem('shoppingCart')) || [];
+    const itemsContainer = document.getElementById('items');
 
-            itemsContainer.innerHTML = ""; // Clear previous content
+    itemsContainer.innerHTML = ""; // Clear previous content
 
-            if (cart.length === 0) {
-                itemsContainer.innerHTML = "<p>No items in cart.</p>";
-            } else {
-                cart.forEach(item => {
-                    const itemElement = document.createElement('div');
-                    itemElement.classList.add('cart-item');
+    if (cart.length === 0) {
+        itemsContainer.innerHTML = "<p>No items in cart.</p>";
+    } else {
+        cart.forEach(item => {
+            const itemElement = document.createElement('div');
+            itemElement.classList.add('cart-item');
 
-                    const itemImage = document.createElement('img');
-                    itemImage.src = ("White Caps Images/White Caps Clothes/" + item.item + ".jpg");
-                    
-                    itemImage.alt = item.item;
+            const itemImage = document.createElement('img');
+            itemImage.src = "White Caps Images/White Caps Clothes/" + item.item + ".jpg";
+            itemImage.alt = item.item;
 
-                    const itemDetails = document.createElement('p');
-                    itemDetails.textContent = `${item.item} - Size: ${item.size} - $${item.price.toFixed(2)}`;
+            const itemDetails = document.createElement('p');
+            itemDetails.textContent = ` ${item.item} - Size: ${item.size} - $${item.price.toFixed(2)}`;
 
-                    itemElement.appendChild(itemImage);
-                    itemElement.appendChild(itemDetails);
-                    itemsContainer.appendChild(itemElement);
-                });
-            }
-        }
+            itemElement.appendChild(itemImage);
+            itemElement.appendChild(itemDetails);
+            itemsContainer.appendChild(itemElement);
+        });
+    }
+}
+
 
         // Display total price
         function displayTotalPrice() {
@@ -186,54 +192,82 @@
             document.getElementById('total-price').textContent = `Total Price: $${totalPrice.toFixed(2)}`;
         }
 
-        // Clear cart
-        function clearCart() {
-            localStorage.removeItem('shoppingCart');
-            displayOrder();
-            displayTotalPrice();
-            alert("Cart has been cleared!");
-        }
+        
+function clearCart() {
+    const itemsContainer = document.getElementById('items');
+    const items = itemsContainer.querySelectorAll('.cart-item');
+
+    // Apply fade+scale animation to each cart item
+    items.forEach(item => {
+        item.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+        item.style.opacity = '0';
+        item.style.transform = 'scale(0.8)';
+    });
+
+    // Wait for animation to finish, then clear cart
+    setTimeout(() => {
+        localStorage.removeItem('shoppingCart');
+        displayOrder();
+        displayTotalPrice();
+        alert("Cart has been cleared!");
+    }, 300);
+}
+
 
         // Submit order and send data to Google Sheets
-        document.getElementById('orderForm').addEventListener('submit', function(event) {
-            event.preventDefault();
+     document.getElementById('orderForm').addEventListener('submit', function(event) {
+    event.preventDefault();
 
-            const cart = JSON.parse(localStorage.getItem('shoppingCart')) || [];
-            const formData = {
-                name: document.getElementById('name').value,
-                address: document.getElementById('address').value,
-                phonenumber: document.getElementById('phonenumber').value,
-                items: cart.map(item => `${item.item} - $${item.price.toFixed(2)}`).join(', '),
-                totalPrice: document.getElementById('total-price').textContent,
-                orderDate: new Date().toLocaleString() // Add the order date
-            };
+    const submitBtn = document.getElementById('submitBtn');
+    submitBtn.disabled = true; // disable immediately
 
-            // Store the order in localStorage
-            let orders = JSON.parse(localStorage.getItem('orders')) || [];
-            orders.push(formData);
-            localStorage.setItem('orders', JSON.stringify(orders));
+    const cart = JSON.parse(localStorage.getItem('shoppingCart')) || [];
+    const formData = {
+        name: document.getElementById('name').value,
+        address: document.getElementById('address').value,
+        phonenumber: document.getElementById('phonenumber').value,
+        items: cart.map(item => ` ${item.item} - Size: ${item.size} - $${item.price.toFixed(2)}`).join(', '),
+        totalPrice: document.getElementById('total-price').textContent,
+        orderDate: new Date().toLocaleString()
+    };
 
-            fetch('https://script.google.com/macros/s/AKfycbz3GMNqHjvM2dwXj_be4zXKKdKkuNZbUylftrgDF_NJW729KtsIJ3Mti-duimxuWpTm/exec', {
-                method: 'POST',
-                body: JSON.stringify(formData),
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                mode: 'no-cors' 
-            })
-            .then(response => response.json())
-            .then(data => {
-                alert('Order submitted successfully!');
-                document.getElementById('orderForm').reset();
-                localStorage.removeItem('shoppingCart');
-                displayOrder();
-                displayTotalPrice();
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert("Error submitting order.");
-            });
-        });
+    let orders = JSON.parse(localStorage.getItem('orders')) || [];
+    orders.push(formData);
+    localStorage.setItem('orders', JSON.stringify(orders));
+
+    fetch('https://script.google.com/macros/s/AKfycbz3GMNqHjvM2dwXj_be4zXKKdKkuNZbUylftrgDF_NJW729KtsIJ3Mti-duimxuWpTm/exec', {
+        method: 'POST',
+        body: JSON.stringify(formData),
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        mode: 'no-cors'
+    })
+    .then(() => {
+        alert('Order submitted successfully!');
+            confetti({  // <-- add this here
+      particleCount: 300,
+      spread: 100,
+      origin: { y: 0.6 },
+      scalar: 1.2,
+      ticks: 150,
+    });
+        document.getElementById('orderForm').reset();
+        localStorage.removeItem('shoppingCart');
+        displayOrder();
+        displayTotalPrice();
+
+        // Re-enable button after 5 seconds cooldown
+        setTimeout(() => {
+            submitBtn.disabled = false;
+        }, 5000);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert("Error submitting order.");
+        submitBtn.disabled = false; // re-enable immediately on error
+    });
+});
 
         // Ensure items and total price display when the page loads
         window.onload = function() {
@@ -241,14 +275,15 @@
             displayTotalPrice();
         };
     </script>
-<center>
+
 <div class="info-p">
                
     <h1>IMPORTANT INFO:</h1>
     <p>---------------------------------------------------------</p>
     <p>Currently, bank payment is not set up, so we will  
-    accept venmo or in-person transactions for the  
-    products. We will contact you with updates on production/delivery with sms. Feel free to contact us for any questions or concerns. 
+    accept venmo, zelle, or in-person transactions for the  
+    products. We will contact you with updates on production/delivery with sms. Feel free to contact us for any questions or concerns such as shipping updates or discounts. 
+    
     Thank you!  </p>
 
     <padding>
@@ -273,7 +308,7 @@
                 </li>
                 <li><a href="Home.html">Home</a></li>
                 <li><a href="NewAboutUs.html">About Us</a></li>
-                <li><a href="">Contact Information</a></li>
+                <li><a href="contact.html">Contact Information</a></li>
               </ul>
           </div>
     
